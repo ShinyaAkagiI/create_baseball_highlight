@@ -18,8 +18,9 @@ out_threshold = 0.9 	# テンプレートマッチング（アウト）の閾値
 homerunpoint = ()	# テンプレートマッチング（ホームラン）の座標
 homerun_threshold = 0.3 # テンプレートマッチング（ホームラン）の閾値
 #ocrpoint = () 		# OCRの座標
-tokutenpoint = () 	# カラーヒストグラム比較の座標
+tokutenpoint = () 	# カラーヒストグラム比較・テンプレートマッチング（得点シーン）の座標
 cmp_threshold = 0.65 	# カラーヒストグラム比較の閾値
+tokuten_threshold = 0.5 # テンプレートマッチング（得点シーン）の閾値
 
 logger = logging.getLogger(__name__)
 #logger.setLevel(logging.DEBUG)
@@ -225,6 +226,53 @@ def tmpmatching_homerun_scene(movie, tmppoint, tmpname, msg):
 	cap.release()
 
 
+# 得点シーンの特定（テンプレートマッチング）
+def tmpmatching_tokuten_scene(movie, tmppoint, tmpname, msg):
+	cap = cv2.VideoCapture(movie)
+	if not cap.isOpened():
+		sys.exit()
+	fps = cap.get(cv2.CAP_PROP_FPS)
+
+	template = cv2.imread(tmpname)
+	ix = tmppoint[0]
+	iy = tmppoint[1]
+	x = tmppoint[2]
+	y = tmppoint[3]
+
+	methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR',
+            'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
+	method = eval("cv2.TM_CCOEFF_NORMED")
+
+	f = open(msg, mode='a')
+	c = 0
+	while True:
+		ret, frame = cap.read()
+		if ret:
+			# １秒単位の解析
+			if int(c%fps) == 0:
+				for scale in np.linspace(0.8, 1.8, 6):
+					frame_point = frame[iy:y, ix:x]
+					tmp_resized = cv2.resize(template, dsize=None, fx=scale, fy=scale)
+					#print(datetime.timedelta(seconds=c//fps), scale)
+					#cv2.imwrite("kaiseki.png", frame_point)
+					# テンプレートサイズがフレームサイズより大きい場合
+					try:	
+						res = cv2.matchTemplate(frame_point, tmp_resized, method)
+					except:
+						logger.debug("template matching error (homerun), {}".format(scale))
+						continue
+					_, max_val, _, max_loc = cv2.minMaxLoc(res)
+					if 1.0 > max_val > tokuten_threshold:
+						logger.info("{}, {}, {}, {}".format(c//fps, msg, max_val, scale))
+						f.write("{}, {}, {}".format(c//fps, max_val, scale))
+						f.write("\n")
+		else:
+			break
+		c += 1
+	f.close()
+	cap.release()
+
+
 # 得点シーンの特定（OCR）
 def ocr_tokuten_scene(movie, ocrpoint, start=0, end=600):
 	cap = cv2.VideoCapture(movie)
@@ -379,7 +427,7 @@ if __name__=="__main__":
 	#ocrpoint = (ix, iy, vx, vy)
 	#print(ocrpoint)
 
-	# カラーヒストグラム比較の座標取得
+	# カラーヒストグラム比較・テンプレートマッチング（得点シーン）の座標取得
 	#movie_fname = input("movie file for compare histgram (tokuten) : ")
 	#compare_time = input("time where tokuten object exists (00:00:00) : ")
 	#create_true_image(movie_fname, compare_time, "compare_true_image.png")
@@ -396,7 +444,9 @@ if __name__=="__main__":
 	#cv2.destroyAllWindows()	
 	#cv2.waitKey(1)
 	#tokutenpoint = (ix, iy, vx, vy)
-	tokutenpoint = (394, 556, 655, 601)
+	#tokutenpoint = (394, 556, 655, 601)
+	#tokutenpoint = (519, 556, 536, 601)
+	tokutenpoint = (507, 547, 547, 609)
 	print(tokutenpoint)
 
 	start = time.time()
@@ -484,14 +534,23 @@ if __name__=="__main__":
 	process11.start()
 	process_list.append(process11)
 	
-	# カラーヒストグラム比較の実行
-	process12 = Process(target=compare_color_tokuten_scene, 
+	# テンプレートマッチングの実行（得点シーン）
+	process12 = Process(target=tmpmatching_tokuten_scene, 
 		kwargs={"movie":"output.mp4",
-			"compareimage":"compare_true_image.png",
-			"comparepoint":tokutenpoint,
+			"tmppoint":tokutenpoint,
+			"tmpname":"tokuten.png",
 			"msg":"得点シーン"})
 	process12.start()
 	process_list.append(process12)
+
+	# カラーヒストグラム比較の実行
+	#process12 = Process(target=compare_color_tokuten_scene, 
+	#	kwargs={"movie":"output.mp4",
+	#		"compareimage":"compare_true_image.png",
+	#		"comparepoint":tokutenpoint,
+	#		"msg":"得点シーン"})
+	#process12.start()
+	#process_list.append(process12)
 
         # テンプレートマッチングの実行（ホームラン）
 	process13 = Process(target=tmpmatching_homerun_scene, 
