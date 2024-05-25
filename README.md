@@ -9,7 +9,7 @@ https://drive.google.com/file/d/1sJ0ygXSMOhBk9mCsJXWAqBgZ7Zq-A-jJ/view?usp=shari
 # ファイル構成
 output.mp4 ･･･ 解析動画ファイル  
 result.txt ･･･ 解析動画の正解データセット  
-create_baseball_highlight.py ･･･ テンプレートマッチング、ORC実行用プログラム  
+create_baseball_highlight.py ･･･ テンプレートマッチング、OCR実行用プログラム  
 get_image_point_in_movie.py ･･･ 動画の特定時間における画面確認用プログラム  
 analysis.py ･･･ 精度評価用プログラム  
 r0.png ･･･ ランナー：なしのテンプレート画像  
