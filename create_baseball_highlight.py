@@ -1,26 +1,34 @@
 import cv2
 import numpy as np
 import datetime
-import imutils
 import time
 import sys
 import copy
 from PIL import Image
-#import pyocr
+import pyocr
 import re
 from multiprocessing import Process
 import logging
+import os.path
 
 runnerpoint = () 	# テンプレートマッチング（ランナー）の座標
 runner_threshold = 0.8	# テンプレートマッチング（ランナー）の閾値
 outpoint = () 		# テンプレートマッチング（アウト）の座標
 out_threshold = 0.9 	# テンプレートマッチング（アウト）の閾値
+strikepoint = ()        # テンプレートマッチング（ストライク）の座標
+strike_threshold = 0.9  # テンプレートマッチング（ストライク）の閾値
+ballpoint = ()          # テンプレートマッチング（ボール）の座標
+ball_threshold = 0.9    # テンプレートマッチング（ボール）の閾値
 homerunpoint = ()	# テンプレートマッチング（ホームラン）の座標
 homerun_threshold = 0.3 # テンプレートマッチング（ホームラン）の閾値
 #ocrpoint = () 		# OCRの座標
 tokutenpoint = () 	# カラーヒストグラム比較・テンプレートマッチング（得点シーン）の座標
 cmp_threshold = 0.65 	# カラーヒストグラム比較の閾値
 tokuten_threshold = 0.5 # テンプレートマッチング（得点シーン）の閾値
+gamesetpoint = ()       # テンプレートマッチング（ゲームセット）の座標
+gameset_threshold = 0.5 # テンプレートマッチング（ゲームセット）の閾値
+homerun_and_gameset_point = () # テンプレートマッチング（ホームラン＆ゲームセット）の座標
+homerun_and_gameset_threshold = 0.8 # テンプレートマッチング（ホームラン＆ゲームセット）の閾値
 
 logger = logging.getLogger(__name__)
 #logger.setLevel(logging.DEBUG)
@@ -37,6 +45,9 @@ logger.addHandler(handler2)
 
 # 正解画像を切り出し
 def create_true_image(movie, time, out_fname):
+	if os.path.isfile(out_fname):
+		return 0
+
 	cap = cv2.VideoCapture(movie)
 	if not cap.isOpened():
 		sys.exit()
@@ -85,8 +96,8 @@ def select_rectangle(event,x,y,flags,param):
 		cv2.rectangle(img,(ix,iy),(x,y),(0,0,255))
 
 
-# ピンチ・チャンスシーンの特定（テンプレートマッチング）
-def tmpmatching_pinch_chance_scene(movie, tmppoint, tmpname, msg):
+# テンプレートマッチング
+def tmpmatching(movie, tmppoint, tmpname, threshold, msg):
 	cap = cv2.VideoCapture(movie)
 	if not cap.isOpened():
 		sys.exit()
@@ -101,6 +112,9 @@ def tmpmatching_pinch_chance_scene(movie, tmppoint, tmpname, msg):
 	methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR',
             'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
 	method = eval("cv2.TM_CCOEFF_NORMED")
+
+	# 処理時間計測
+	start = time.time()
 
 	f = open(msg, mode='a')
 	c = 0
@@ -118,57 +132,10 @@ def tmpmatching_pinch_chance_scene(movie, tmppoint, tmpname, msg):
 					try:
 						res = cv2.matchTemplate(frame_point, tmp_resized, method)
 					except:
-						logger.debug("template matching error (runner), {}".format(scale))
+						logger.debug("template matching error, {}, {}".format(msg, scale))
 						continue
 					_, max_val, _, max_loc = cv2.minMaxLoc(res)
-					if 1.0 > max_val > runner_threshold:
-						logger.info("{}, {}, {}, {}".format(c//fps,  msg, max_val, scale))
-						f.write("{}, {}, {}".format(c//fps, max_val, scale))
-						f.write("\n")
-		else:
-			break
-		c += 1
-	f.close()
-	cap.release()
-
-
-# アウトカウントの特定（テンプレートマッチング）
-def tmpmatching_outcount_scene(movie, tmppoint, tmpname, msg):
-	cap = cv2.VideoCapture(movie)
-	if not cap.isOpened():
-		sys.exit()
-	fps = cap.get(cv2.CAP_PROP_FPS)
-
-	template = cv2.imread(tmpname)
-	ix = tmppoint[0]
-	iy = tmppoint[1]
-	x = tmppoint[2]
-	y = tmppoint[3]
-
-	methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR',
-            'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
-	method = eval("cv2.TM_CCOEFF_NORMED")
-
-	f = open(msg, mode='a')
-	c = 0
-	while True:
-		ret, frame = cap.read()
-		if ret:
-			# １秒単位の解析
-			if int(c%fps) == 0:
-				for scale in np.linspace(0.8, 1.8, 6):
-					frame_point = frame[iy:y, ix:x]
-					tmp_resized = cv2.resize(template, dsize=None, fx=scale, fy=scale)
-					#print(datetime.timedelta(seconds=c//fps), scale)
-					#cv2.imwrite("kaiseki.png", frame_point)
-					# テンプレートサイズがフレームサイズより大きい場合
-					try:	
-						res = cv2.matchTemplate(frame_point, tmp_resized, method)
-					except:
-						logger.debug("template matching error (outcount), {}".format(scale))
-						continue
-					_, max_val, _, max_loc = cv2.minMaxLoc(res)
-					if 1.0 > max_val > out_threshold:
+					if 1.0 > max_val > threshold:
 						logger.info("{}, {}, {}, {}".format(c//fps, msg, max_val, scale))
 						f.write("{}, {}, {}".format(c//fps, max_val, scale))
 						f.write("\n")
@@ -178,103 +145,18 @@ def tmpmatching_outcount_scene(movie, tmppoint, tmpname, msg):
 	f.close()
 	cap.release()
 
+	# 処理時間計測
+	end = time.time()
 
-# ホームランの特定（テンプレートマッチング）
-def tmpmatching_homerun_scene(movie, tmppoint, tmpname, msg):
-	cap = cv2.VideoCapture(movie)
-	if not cap.isOpened():
-		sys.exit()
-	fps = cap.get(cv2.CAP_PROP_FPS)
-
-	template = cv2.imread(tmpname)
-	ix = tmppoint[0]
-	iy = tmppoint[1]
-	x = tmppoint[2]
-	y = tmppoint[3]
-
-	methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR',
-            'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
-	method = eval("cv2.TM_CCOEFF_NORMED")
-
-	f = open(msg, mode='a')
-	c = 0
-	while True:
-		ret, frame = cap.read()
-		if ret:
-			# １秒単位の解析
-			if int(c%fps) == 0:
-				for scale in np.linspace(0.8, 1.8, 6):
-					frame_point = frame[iy:y, ix:x]
-					tmp_resized = cv2.resize(template, dsize=None, fx=scale, fy=scale)
-					#print(datetime.timedelta(seconds=c//fps), scale)
-					#cv2.imwrite("kaiseki.png", frame_point)
-					# テンプレートサイズがフレームサイズより大きい場合
-					try:	
-						res = cv2.matchTemplate(frame_point, tmp_resized, method)
-					except:
-						logger.debug("template matching error (homerun), {}".format(scale))
-						continue
-					_, max_val, _, max_loc = cv2.minMaxLoc(res)
-					if 1.0 > max_val > homerun_threshold:
-						logger.info("{}, {}, {}, {}".format(c//fps, msg, max_val, scale))
-						f.write("{}, {}, {}".format(c//fps, max_val, scale))
-						f.write("\n")
-		else:
-			break
-		c += 1
+	# 処理時間記載
+	# close時に追記されるのでファイルロックは不要
+	f = open("processtime.log", "a")
+	f.write("{}, {}\n".format(msg, datetime.timedelta(seconds=end-start)))
 	f.close()
-	cap.release()
 
 
-# 得点シーンの特定（テンプレートマッチング）
-def tmpmatching_tokuten_scene(movie, tmppoint, tmpname, msg):
-	cap = cv2.VideoCapture(movie)
-	if not cap.isOpened():
-		sys.exit()
-	fps = cap.get(cv2.CAP_PROP_FPS)
-
-	template = cv2.imread(tmpname)
-	ix = tmppoint[0]
-	iy = tmppoint[1]
-	x = tmppoint[2]
-	y = tmppoint[3]
-
-	methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR',
-            'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
-	method = eval("cv2.TM_CCOEFF_NORMED")
-
-	f = open(msg, mode='a')
-	c = 0
-	while True:
-		ret, frame = cap.read()
-		if ret:
-			# １秒単位の解析
-			if int(c%fps) == 0:
-				for scale in np.linspace(0.8, 1.8, 6):
-					frame_point = frame[iy:y, ix:x]
-					tmp_resized = cv2.resize(template, dsize=None, fx=scale, fy=scale)
-					#print(datetime.timedelta(seconds=c//fps), scale)
-					#cv2.imwrite("kaiseki.png", frame_point)
-					# テンプレートサイズがフレームサイズより大きい場合
-					try:	
-						res = cv2.matchTemplate(frame_point, tmp_resized, method)
-					except:
-						logger.debug("template matching error (homerun), {}".format(scale))
-						continue
-					_, max_val, _, max_loc = cv2.minMaxLoc(res)
-					if 1.0 > max_val > tokuten_threshold:
-						logger.info("{}, {}, {}, {}".format(c//fps, msg, max_val, scale))
-						f.write("{}, {}, {}".format(c//fps, max_val, scale))
-						f.write("\n")
-		else:
-			break
-		c += 1
-	f.close()
-	cap.release()
-
-
-# 得点シーンの特定（OCR）
-def ocr_tokuten_scene(movie, ocrpoint, start=0, end=600):
+# OCR（数字）
+def ocr(movie, ocrpoint, msg):
 	cap = cv2.VideoCapture(movie)
 	if not cap.isOpened():
 		sys.exit()
@@ -288,22 +170,39 @@ def ocr_tokuten_scene(movie, ocrpoint, start=0, end=600):
 	x = ocrpoint[2]
 	y = ocrpoint[3]
 
+	# 処理時間計測
+	start = time.time()
+
+	f = open(msg, mode='a')
 	c = 0
 	while True:
 		ret, frame = cap.read()
 		if ret:
-			if int(c%fps) == 0 and start < c//fps < end:
-				img = cv2.resize(frame[iy:y, ix:x], dsize=None, fx=3.0, fy=3.0)
+			if int(c%fps) == 0:
+				img = cv2.resize(frame[iy:y, ix:x], dsize=None, fx=1.0, fy=1.0)
 				txt = tool.image_to_string(
 					Image.fromarray(img),
-					lang="jpn",
-					builder=pyocr.builders.TextBuilder(tesseract_layout=7))
-				num_txt = re.findall(r"\d+", txt)
-				if num_txt != []:
-					logger.info("{}, {}".format(c//fps, txt))
+					lang="eng",
+					builder=pyocr.builders.TextBuilder(tesseract_layout=6))
+				m = re.search("\d+", txt)
+				if m:
+					logger.info("{}, {}, {}".format(c//fps, msg, m.group()))
+					f.write("{}, {}".format(c//fps, m.group()))
+					f.write("\n")
 		else:
 			break
 		c += 1
+	f.close()
+	cap.release()
+
+	# 処理時間計測
+	end = time.time()
+
+	# 処理時間記載
+	# close時に追記されるのでファイルロックは不要
+	f = open("processtime.log", "a")
+	f.write("{}, {}\n".format(msg, datetime.timedelta(seconds=end-start)))
+	f.close()
 
 
 # 得点シーンの特定（カラーヒストグラム比較）
@@ -345,11 +244,10 @@ def compare_color_tokuten_scene(movie, compareimage, comparepoint, msg):
 
 
 if __name__=="__main__":
-	# 00:10:00, 00:10:00, 00:51:51, 00:13:24
+	movie_fname = input("movie file for analysis : ")
 
-	movie_fname = input("movie file for analysis (runner, out, tokuten) : ")
-
-	# テンプレートの座標取得(ランナー)
+	# テンプレートマッチングの座標取得(ランナー)
+	#print("example # 10:00")
 	#tmp_time = input("time where runnner object exists (00:00:00) : ")
 	#create_true_image(movie_fname, tmp_time, "runner_true_image.png")
 	
@@ -362,14 +260,14 @@ if __name__=="__main__":
 	#	k = cv2.waitKey(1) & 0xFF
 	#	if k == 13: # enter key
 	#		break
-	#cv2.destroyAllWindows()	
+	#cv2.destroyAllWindows()
 	#cv2.waitKey(1)
 	#runnerpoint = (ix, iy, vx, vy)
 	runnerpoint = (149, 112, 225, 152)
-	print(runnerpoint)
+	#print(runnerpoint)
 
-	# テンプレートの座標取得(アウト)
-	#movie_fname = input("movie file for template matching (out) : ")
+	# テンプレートマッチングの座標取得(アウト)
+	#print("example # 10:00")
 	#tmp_time = input("time where out count object exists (00:00:00) : ")
 	#create_true_image(movie_fname, tmp_time, "out_true_image.png")
 	
@@ -382,14 +280,55 @@ if __name__=="__main__":
 	#	k = cv2.waitKey(1) & 0xFF
 	#	if k == 13: # enter key
 	#		break
-	#cv2.destroyAllWindows()	
+	#cv2.destroyAllWindows()
 	#cv2.waitKey(1)
 	#outpoint = (ix, iy, vx, vy)
 	outpoint = (148, 179, 223, 203)
-	print(outpoint)
+	#print(outpoint)
 
-	# テンプレートの座標取得（ホームラン）
-	#movie_fname = input("movie file for template matching (out) : ")
+	# テンプレートマッチングの座標取得(ストライク)
+	#print("example # 10:00")
+	#tmp_time = input("time where strike count object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "strike_true_image.png")
+	
+	#img = cv2.imread("strike_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#strikepoint = (ix, iy, vx, vy)
+	#strikepoint = (148, 165, 223, 179)
+	strikepoint = (148, 163, 210, 183)
+	#print(strikepoint)
+
+	# テンプレートマッチングの座標取得(ボール)
+	#print("example # 10:00")
+	#tmp_time = input("time where ball count object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "ball_true_image.png")
+	
+	#img = cv2.imread("ball_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#ballpoint = (ix, iy, vx, vy)
+	ballpoint = (148, 149, 223, 165)
+	#print(ballpoint)
+
+	# テンプレートマッチングの座標取得（ホームラン）
+	#print("example # 51:51")
 	#tmp_time = input("time where homerun object exists (00:00:00) : ")
 	#create_true_image(movie_fname, tmp_time, "homerun_true_image.png")
 	
@@ -402,14 +341,13 @@ if __name__=="__main__":
 	#	k = cv2.waitKey(1) & 0xFF
 	#	if k == 13: # enter key
 	#		break
-	#cv2.destroyAllWindows()	
+	#cv2.destroyAllWindows()
 	#cv2.waitKey(1)
 	#homerunpoint = (ix, iy, vx, vy)
 	homerunpoint = (172, 176, 880, 542)
-	print(homerunpoint)
+	#print(homerunpoint)
 
 	# OCRの座標取得
-	#movie_fname = input("movie file for ocr (tokuten) : ")
 	#ocr_time = input("time where ocr object exists (00:00:00) : ")
 	#create_true_image(movie_fname, ocr_time, "ocr_true_image.png")
 
@@ -422,13 +360,13 @@ if __name__=="__main__":
 	#	k = cv2.waitKey(1) & 0xFF
 	#	if k == 13: # enter key
 	#		break
-	#cv2.destroyAllWindows()	
+	#cv2.destroyAllWindows()
 	#cv2.waitKey(1)
 	#ocrpoint = (ix, iy, vx, vy)
 	#print(ocrpoint)
 
 	# カラーヒストグラム比較・テンプレートマッチング（得点シーン）の座標取得
-	#movie_fname = input("movie file for compare histgram (tokuten) : ")
+	#print("example # 13:24")
 	#compare_time = input("time where tokuten object exists (00:00:00) : ")
 	#create_true_image(movie_fname, compare_time, "compare_true_image.png")
 
@@ -441,125 +379,363 @@ if __name__=="__main__":
 	#	k = cv2.waitKey(1) & 0xFF
 	#	if k == 13: # enter key
 	#		break
-	#cv2.destroyAllWindows()	
+	#cv2.destroyAllWindows()
 	#cv2.waitKey(1)
 	#tokutenpoint = (ix, iy, vx, vy)
-	#tokutenpoint = (394, 556, 655, 601)
-	#tokutenpoint = (519, 556, 536, 601)
 	tokutenpoint = (507, 547, 547, 609)
-	print(tokutenpoint)
+	#print(tokutenpoint)
+
+	# テンプレートマッチングの座標取得（ゲームセット文字）
+	#print("example # 56:57")
+	#tmp_time = input("time where gameset object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "gameset_true_image.png")
+	
+	#img = cv2.imread("gameset_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#gamesetpoint = (ix, iy, vx, vy)
+	gamesetpoint = (391, 146, 673, 435)
+	#print(gamesetpoint)
+
+	# テンプレートマッチングの座標取得（ホームラン＆ゲームセット）
+	#print("example # 23:35")
+	#tmp_time = input("time where homerun and gameset object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "homerun_and_gameset_true_image.png")
+	
+	#img = cv2.imread("homerun_and_gameset_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#homerun_and_gameset_point = (ix, iy, vx, vy)
+	homerun_and_gameset_point = (466, 302, 583, 376)
+	#print(homerun_and_gameset_point)
+
+	# OCRの座標取得（スコア：先攻）
+	#print("example # 47:24")
+	#tmp_time = input("time where score object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "score_true_image.png")
+	
+	#img = cv2.imread("score_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#ocrpoint_firstscore = (ix, iy, vx, vy)
+	ocrpoint_firstscore = (105, 136, 147, 170)
+	#print(ocrpoint_firstscore)
+
+	# OCRの座標取得（スコア：後攻）
+	#print("example # 47:24")
+	#tmp_time = input("time where score object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "score_true_image.png")
+	
+	#img = cv2.imread("score_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#ocrpoint_lastscore = (ix, iy, vx, vy)
+	ocrpoint_lastscore = (103, 170, 147, 203)
+	#print(ocrpoint_lastscore)
+
+	# OCRの座標取得（得点シーン：先攻）
+	#print("example # 47:32")
+	#tmp_time = input("time where score object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "tokuten_true_image.png")
+	
+	#img = cv2.imread("tokuten_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#ocrpoint_firsttokuten = (ix, iy, vx, vy)
+	ocrpoint_firsttokuten = (569, 561, 610, 596)
+	#print(ocrpoint_firsttokuten)
+	
+	# OCRの座標取得（得点シーン：後攻）
+	#print("example # 47:32")
+	#tmp_time = input("time where score object exists (00:00:00) : ")
+	#create_true_image(movie_fname, tmp_time, "tokuten_true_image.png")
+	
+	#img = cv2.imread("tokuten_true_image.png")
+	#cache = None
+	#cv2.namedWindow('image')
+	#cv2.setMouseCallback('image',select_rectangle)
+	#while(1):
+	#	cv2.imshow('image',img)
+	#	k = cv2.waitKey(1) & 0xFF
+	#	if k == 13: # enter key
+	#		break
+	#cv2.destroyAllWindows()
+	#cv2.waitKey(1)
+	#ocrpoint_lasttokuten = (ix, iy, vx, vy)
+	ocrpoint_lasttokuten = (437, 561, 482, 596)
+	#print(ocrpoint_lasttokuten)
+
+
+        # point座標を表示して途中終了するための待機処理
+	#time.sleep(1000)
+
 
 	start = time.time()
 
 	# テンプレートマッチングの実行（ランナー）
 	process_list = []
 
-	process1 = Process(target=tmpmatching_pinch_chance_scene, 
+	process1 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r0.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：なし"})
 	process1.start()
 	process_list.append(process1)
-	process2 = Process(target=tmpmatching_pinch_chance_scene, 
+	process2 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r1.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：一塁"})
 	process2.start()
 	process_list.append(process2)
-	process3 = Process(target=tmpmatching_pinch_chance_scene, 
+	process3 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r2.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：二塁"})
 	process3.start()
 	process_list.append(process3)
-	process4 = Process(target=tmpmatching_pinch_chance_scene, 
+	process4 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r3.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：三塁"})
 	process4.start()
 	process_list.append(process4)
-	process5 = Process(target=tmpmatching_pinch_chance_scene, 
+	process5 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r12.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：一・二塁"})
 	process5.start()
 	process_list.append(process5)
-	process6 = Process(target=tmpmatching_pinch_chance_scene, 
+	process6 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r13.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：一・三塁"})
 	process6.start()
 	process_list.append(process6)
-	process7 = Process(target=tmpmatching_pinch_chance_scene, 
+	process7 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r23.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：二・三塁"})
 	process7.start()
 	process_list.append(process7)
-	process8 = Process(target=tmpmatching_pinch_chance_scene, 
+	process8 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":runnerpoint,
 			"tmpname":"r123.png",
+			"threshold":runner_threshold,
 			"msg":"ランナー：満塁"})
 	process8.start()
 	process_list.append(process8)
 
 	# テンプレートマッチングの実行（アウト）
-	process9 = Process(target=tmpmatching_outcount_scene, 
+	process9 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":outpoint,
 			"tmpname":"o0.png",
+			"threshold":out_threshold,
 			"msg":"アウト：０"})
 	process9.start()
 	process_list.append(process9)
-	process10 = Process(target=tmpmatching_outcount_scene, 
+	process10 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":outpoint,
 			"tmpname":"o1.png",
+			"threshold":out_threshold,
 			"msg":"アウト：１"})
 	process10.start()
 	process_list.append(process10)
-	process11 = Process(target=tmpmatching_outcount_scene, 
+	process11 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":outpoint,
 			"tmpname":"o2.png",
+			"threshold":out_threshold,
 			"msg":"アウト：２"})
 	process11.start()
 	process_list.append(process11)
 	
+	# テンプレートマッチングの実行（ストライク）
+	process12 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":strikepoint,
+			"tmpname":"s0.png",
+			"threshold":strike_threshold,
+			"msg":"ストライク：０"})
+	process12.start()
+	process_list.append(process12)
+	process13 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":strikepoint,
+			"tmpname":"s1.png",
+			"threshold":strike_threshold,
+			"msg":"ストライク：１"})
+	process13.start()
+	process_list.append(process13)
+	process14 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":strikepoint,
+			"tmpname":"s2.png",
+			"threshold":strike_threshold,
+			"msg":"ストライク：２"})
+	process14.start()
+	process_list.append(process14)
+	
+	# テンプレートマッチングの実行（ボール）
+	process15 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":ballpoint,
+			"tmpname":"b0.png",
+			"threshold":ball_threshold,
+			"msg":"ボール：０"})
+	process15.start()
+	process_list.append(process15)
+	process16 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":ballpoint,
+			"tmpname":"b1.png",
+			"threshold":ball_threshold,
+			"msg":"ボール：１"})
+	process16.start()
+	process_list.append(process16)
+	process17 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":ballpoint,
+			"tmpname":"b2.png",
+			"threshold":ball_threshold,
+			"msg":"ボール：２"})
+	process17.start()
+	process_list.append(process17)
+	process18 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":ballpoint,
+			"tmpname":"b3.png",
+			"threshold":ball_threshold,
+			"msg":"ボール：３"})
+	process18.start()
+	process_list.append(process18)
+	
 	# テンプレートマッチングの実行（得点シーン）
-	process12 = Process(target=tmpmatching_tokuten_scene, 
+	process19 = Process(target=tmpmatching, 
 		kwargs={"movie":"output.mp4",
 			"tmppoint":tokutenpoint,
 			"tmpname":"tokuten.png",
+			"threshold":tokuten_threshold,
 			"msg":"得点シーン"})
-	process12.start()
-	process_list.append(process12)
+	process19.start()
+	process_list.append(process19)
+
+        # テンプレートマッチングの実行（ホームラン）
+	process20 = Process(target=tmpmatching, 
+		kwargs={"movie":"output.mp4",
+			"tmppoint":homerunpoint,
+			"tmpname":"homerun_true.png",
+			"threshold":homerun_threshold,
+			"msg":"ホームラン"})
+	process20.start()
+	process_list.append(process20)
+
+	# テンプレートマッチングの実行（ホームラン＆ゲームセット）
+	process21 = Process(target=tmpmatching,
+		kwargs={"movie":"output.mp4",
+			"tmppoint":homerun_and_gameset_point,
+			"tmpname":"tokuten2.png",
+			"threshold":homerun_and_gameset_threshold,
+			"msg":"ホームラン＆ゲームセット"})
+	process21.start()
+	process_list.append(process21)
+
+	# OCRの実行（スコア：先攻）
+	process22 = Process(target=ocr, 
+		kwargs={"movie":"output.mp4",
+			"ocrpoint":ocrpoint_firstscore,
+			"msg":"スコア：先攻"})
+	process22.start()
+	process_list.append(process22)
+
+	# OCRの実行（スコア：後攻）
+	process23 = Process(target=ocr, 
+		kwargs={"movie":"output.mp4",
+			"ocrpoint":ocrpoint_lastscore,
+			"msg":"スコア：後攻"})
+	process23.start()
+	process_list.append(process23)
+
+	# OCRの実行（得点シーン：先攻）
+	process24 = Process(target=ocr, 
+		kwargs={"movie":"output.mp4",
+			"ocrpoint":ocrpoint_firsttokuten,
+			"msg":"得点シーン：先攻"})
+	process24.start()
+	process_list.append(process24)
+
+	# OCRの実行（得点シーン：後攻）
+	process25 = Process(target=ocr, 
+		kwargs={"movie":"output.mp4",
+			"ocrpoint":ocrpoint_lasttokuten,
+			"msg":"得点シーン：後攻"})
+	process25.start()
+	process_list.append(process25)
 
 	# カラーヒストグラム比較の実行
-	#process12 = Process(target=compare_color_tokuten_scene, 
+	#process00 = Process(target=compare_color_tokuten_scene, 
 	#	kwargs={"movie":"output.mp4",
 	#		"compareimage":"compare_true_image.png",
 	#		"comparepoint":tokutenpoint,
 	#		"msg":"得点シーン"})
-	#process12.start()
-	#process_list.append(process12)
-
-        # テンプレートマッチングの実行（ホームラン）
-	process13 = Process(target=tmpmatching_homerun_scene, 
-		kwargs={"movie":"output.mp4",
-			"tmppoint":homerunpoint,
-			"tmpname":"homerun_true.png",
-			"msg":"ホームラン"})
-	process13.start()
-	process_list.append(process13)
+	#process00.start()
+	#process_list.append(process00)
 
 	for p in process_list:
 		p.join()

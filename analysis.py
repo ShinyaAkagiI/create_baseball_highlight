@@ -20,6 +20,19 @@ with open(fname_result, "r") as f:
 # num 11: out 2
 # num 12: tokuten scene
 # num 13: homerun scene
+# num 14: ball 0
+# num 15: ball 1
+# num 16: ball 2
+# num 17: ball 3
+# num 18: strike 0
+# num 19: strike 1
+# num 20: strike 2
+# num 21: gameset
+# num 22: tokuten_in_homerun_and_gameset
+# num 23: score_ocr_first
+# num 24: score_ocr_last
+# num 25: tokuten_ocr_first
+# num 26: tokuten_ocr_last
 data = data.split("\n")
 for i,d in enumerate(data):
 	data[i] = d.split(", ")
@@ -39,6 +52,19 @@ fname_o1 = "アウト：１"
 fname_o2 = "アウト：２"
 fname_tokuten = "得点シーン"
 fname_homerun = "ホームラン"
+fname_b0 = "ボール：０"
+fname_b1 = "ボール：１"
+fname_b2 = "ボール：２"
+fname_b3 = "ボール：３"
+fname_s0 = "ストライク：０"
+fname_s1 = "ストライク：１"
+fname_s2 = "ストライク：２"
+fname_gameset = "ゲームセット"
+fname_tokuten_in_homerun_and_gameset = "ホームラン＆ゲームセット"
+fname_score_ocr_first = "スコア：先攻"
+fname_score_ocr_last = "スコア：後攻"
+fname_tokuten_ocr_first = "得点シーン：先攻"
+fname_tokuten_ocr_last = "得点シーン：後攻"
 
 # runner nothing
 with open(fname_r0, "r") as f:
@@ -209,6 +235,175 @@ for d in data_13_raw:
 	except:
 		pass
 
+# ball 0
+with open(fname_b0, "r") as f:
+	data_14_raw = f.read()
+
+data_14_raw = data_14_raw.split("\n")
+data_14 = {}
+for d in data_14_raw:
+	line = d.split(", ")
+	try:
+		data_14[line[0]] = line[1]
+	except:
+		pass
+
+# ball 1
+with open(fname_b1, "r") as f:
+	data_15_raw = f.read()
+
+data_15_raw = data_15_raw.split("\n")
+data_15 = {}
+for d in data_15_raw:
+	line = d.split(", ")
+	try:
+		data_15[line[0]] = line[1]
+	except:
+		pass
+
+# ball 2
+with open(fname_b2, "r") as f:
+	data_16_raw = f.read()
+
+data_16_raw = data_16_raw.split("\n")
+data_16 = {}
+for d in data_16_raw:
+	line = d.split(", ")
+	try:
+		data_16[line[0]] = line[1]
+	except:
+		pass
+
+# ball 3
+with open(fname_b3, "r") as f:
+	data_17_raw = f.read()
+
+data_17_raw = data_17_raw.split("\n")
+data_17 = {}
+for d in data_17_raw:
+	line = d.split(", ")
+	try:
+		data_17[line[0]] = line[1]
+	except:
+		pass
+
+# strike 0
+with open(fname_s0, "r") as f:
+	data_18_raw = f.read()
+
+data_18_raw = data_18_raw.split("\n")
+data_18 = {}
+for d in data_18_raw:
+	line = d.split(", ")
+	try:
+		data_18[line[0]] = line[1]
+	except:
+		pass
+
+# strike 1
+with open(fname_s1, "r") as f:
+	data_19_raw = f.read()
+
+data_19_raw = data_19_raw.split("\n")
+data_19 = {}
+for d in data_19_raw:
+	line = d.split(", ")
+	try:
+		data_19[line[0]] = line[1]
+	except:
+		pass
+
+# strike 2
+with open(fname_s2, "r") as f:
+	data_20_raw = f.read()
+
+data_20_raw = data_20_raw.split("\n")
+data_20 = {}
+for d in data_20_raw:
+	line = d.split(", ")
+	try:
+		data_20[line[0]] = line[1]
+	except:
+		pass
+
+# gameset
+#with open(fname_gameset, "r") as f:
+#	data_21_raw = f.read()
+#
+#data_21_raw = data_21_raw.split("\n")
+#data_21 = {}
+#for d in data_21_raw:
+#	line = d.split(", ")
+#	try:
+#		data_21[line[0]] = line[1]
+#	except:
+#		pass
+
+# tokuten in homerun and gameset
+with open(fname_tokuten_in_homerun_and_gameset, "r") as f:
+	data_22_raw = f.read()
+
+data_22_raw = data_22_raw.split("\n")
+data_22 = {}
+for d in data_22_raw:
+	line = d.split(", ")
+	try:
+		data_22[line[0]] = line[1]
+	except:
+		pass
+
+# score ocr first
+with open(fname_score_ocr_first, "r") as f:
+	data_23_raw = f.read()
+
+data_23_raw = data_23_raw.split("\n")
+data_23 = {}
+for d in data_23_raw:
+	line = d.split(", ")
+	try:
+		data_23[line[0]] = line[1]
+	except:
+		pass
+
+# score ocr last
+with open(fname_score_ocr_last, "r") as f:
+	data_24_raw = f.read()
+
+data_24_raw = data_24_raw.split("\n")
+data_24 = {}
+for d in data_24_raw:
+	line = d.split(", ")
+	try:
+		data_24[line[0]] = line[1]
+	except:
+		pass
+
+# tokuten ocr first
+with open(fname_tokuten_ocr_first, "r") as f:
+	data_25_raw = f.read()
+
+data_25_raw = data_25_raw.split("\n")
+data_25 = {}
+for d in data_25_raw:
+	line = d.split(", ")
+	try:
+		data_25[line[0]] = line[1]
+	except:
+		pass
+
+# tokuten ocr last
+with open(fname_tokuten_ocr_last, "r") as f:
+	data_26_raw = f.read()
+
+data_26_raw = data_26_raw.split("\n")
+data_26 = {}
+for d in data_26_raw:
+	line = d.split(", ")
+	try:
+		data_26[line[0]] = line[1]
+	except:
+		pass
+
 # 正解データと比較し、正答率、再現率、適合率を算出
 # 正解数、誤検出ポイントも表示
 r0_tp = r0_fn = r0_fp = r0_tn = 0
@@ -250,6 +445,64 @@ tokuten_true = 0
 homerun_tp = homerun_fn = homerun_fp = homerun_tn = 0
 homerun_fp_list = []
 homerun_true = 0
+b0_tp = b0_fn = b0_fp = b0_tn = 0
+b0_fp_list = []
+b0_true = 0
+b1_tp = b1_fn = b1_fp = b1_tn = 0
+b1_fp_list = []
+b1_true = 0
+b2_tp = b2_fn = b2_fp = b2_tn = 0
+b2_fp_list = []
+b2_true = 0
+b3_tp = b3_fn = b3_fp = b3_tn = 0
+b3_fp_list = []
+b3_true = 0
+s0_tp = s0_fn = s0_fp = s0_tn = 0
+s0_fp_list = []
+s0_true = 0
+s1_tp = s1_fn = s1_fp = s1_tn = 0
+s1_fp_list = []
+s1_true = 0
+s2_tp = s2_fn = s2_fp = s2_tn = 0
+s2_fp_list = []
+s2_true = 0
+gameset_tp = gameset_fn = gameset_fp = gameset_tn = 0
+gameset_fp_list = []
+gameset_true = 0
+tokuten_in_homerun_and_gameset_tp = 0
+tokuten_in_homerun_and_gameset_fn = 0
+tokuten_in_homerun_and_gameset_fp = 0
+tokuten_in_homerun_and_gameset_tn = 0
+tokuten_in_homerun_and_gameset_fp_list = []
+tokuten_in_homerun_and_gameset_true = 0
+score_ocr_first_true_match = 0
+score_ocr_first_unmatch = 0
+score_ocr_first_undetect = 0
+score_ocr_first_false_match = 0
+score_ocr_first_misdetect = 0
+score_ocr_first_true = 0
+score_ocr_first_false = 0
+score_ocr_last_true_match = 0
+score_ocr_last_unmatch = 0
+score_ocr_last_undetect = 0
+score_ocr_last_false_match = 0
+score_ocr_last_misdetect = 0
+score_ocr_last_true = 0
+score_ocr_last_false = 0
+tokuten_ocr_first_true_match = 0
+tokuten_ocr_first_unmatch = 0
+tokuten_ocr_first_undetect = 0
+tokuten_ocr_first_false_match = 0
+tokuten_ocr_first_misdetect = 0
+tokuten_ocr_first_true = 0
+tokuten_ocr_first_false = 0
+tokuten_ocr_last_true_match = 0
+tokuten_ocr_last_unmatch = 0
+tokuten_ocr_last_undetect = 0
+tokuten_ocr_last_false_match = 0
+tokuten_ocr_last_misdetect = 0
+tokuten_ocr_last_true = 0
+tokuten_ocr_last_false = 0
 
 for d in data:
 	time = d[0]
@@ -266,6 +519,19 @@ for d in data:
 	o2 = d[11]
 	tokuten = d[12]
 	homerun = d[13]
+	b0 = d[14]
+	b1 = d[15]
+	b2 = d[16]
+	b3 = d[17]
+	s0 = d[18]
+	s1 = d[19]
+	s2 = d[20]
+	#gameset = d[21]
+	tokuten_in_homerun_and_gameset = d[22]
+	score_ocr_first = d[23]
+	score_ocr_last = d[24]
+	tokuten_ocr_first = d[25]
+	tokuten_ocr_last = d[26]
 
 	# TP, FN, FP, TNを計算
 	if r0 == "1":
@@ -437,6 +703,187 @@ for d in data:
 		else:
 			homerun_tn += 1
 
+	if b0 == "1":
+		b0_true += 1
+		if time in data_14:
+			b0_tp += 1
+		else:
+			b0_fn += 1
+	else:
+		if time in data_14:
+			b0_fp += 1
+			b0_fp_list.append((time, data_14[time]))
+		else:
+			b0_tn += 1
+
+	if b1 == "1":
+		b1_true += 1
+		if time in data_15:
+			b1_tp += 1
+		else:
+			b1_fn += 1
+	else:
+		if time in data_15:
+			b1_fp += 1
+			b1_fp_list.append((time, data_15[time]))
+		else:
+			b1_tn += 1
+
+	if b2 == "1":
+		b2_true += 1
+		if time in data_16:
+			b2_tp += 1
+		else:
+			b2_fn += 1
+	else:
+		if time in data_16:
+			b2_fp += 1
+			b2_fp_list.append((time, data_16[time]))
+		else:
+			b2_tn += 1
+
+	if b3 == "1":
+		b3_true += 1
+		if time in data_17:
+			b3_tp += 1
+		else:
+			b3_fn += 1
+	else:
+		if time in data_17:
+			b3_fp += 1
+			b3_fp_list.append((time, data_17[time]))
+		else:
+			b3_tn += 1
+
+	if s0 == "1":
+		s0_true += 1
+		if time in data_18:
+			s0_tp += 1
+		else:
+			s0_fn += 1
+	else:
+		if time in data_18:
+			s0_fp += 1
+			s0_fp_list.append((time, data_18[time]))
+		else:
+			s0_tn += 1
+
+	if s1 == "1":
+		s1_true += 1
+		if time in data_19:
+			s1_tp += 1
+		else:
+			s1_fn += 1
+	else:
+		if time in data_19:
+			s1_fp += 1
+			s1_fp_list.append((time, data_19[time]))
+		else:
+			s1_tn += 1
+
+	if s2 == "1":
+		s2_true += 1
+		if time in data_20:
+			s2_tp += 1
+		else:
+			s2_fn += 1
+	else:
+		if time in data_20:
+			s2_fp += 1
+			s2_fp_list.append((time, data_20[time]))
+		else:
+			s2_tn += 1
+
+	#if gameset == "1":
+	#	gameset_true += 1
+	#	if time in data_21:
+	#		gameset_tp += 1
+	#	else:
+	#		gameset_fn += 1
+	#else:
+	#	if time in data_21:
+	#		gameset_fp += 1
+	#		gameset_fp_list.append((time, data_21[time]))
+	#	else:
+	#		gameset_tn += 1
+
+	if tokuten_in_homerun_and_gameset == "1":
+		tokuten_in_homerun_and_gameset_true += 1
+		if time in data_22:
+			tokuten_in_homerun_and_gameset_tp += 1
+		else:
+			tokuten_in_homerun_and_gameset_fn += 1
+	else:
+		if time in data_22:
+			tokuten_in_homerun_and_gameset_fp += 1
+			tokuten_in_homerun_and_gameset_fp_list.append((time, data_22[time]))
+		else:
+			tokuten_in_homerun_and_gameset_tn += 1
+
+	if score_ocr_first != "False":
+		score_ocr_first_true += 1
+		if time in data_23:
+			if score_ocr_first == data_23[time]:
+				score_ocr_first_true_match += 1
+			else:
+				score_ocr_first_unmatch += 1
+		else:
+			score_ocr_first_undetect += 1
+	else:
+		score_ocr_first_false += 1
+		if time in data_23:
+			score_ocr_first_misdetect += 1
+		else:
+			score_ocr_first_false_match += 1
+
+	if score_ocr_last != "False":
+		score_ocr_last_true += 1
+		if time in data_24:
+			if score_ocr_last == data_24[time]:
+				score_ocr_last_true_match += 1
+			else:
+				score_ocr_last_unmatch += 1
+		else:
+			score_ocr_last_undetect += 1
+	else:
+		score_ocr_last_false += 1
+		if time in data_24:
+			score_ocr_last_misdetect += 1
+		else:
+			score_ocr_last_false_match += 1
+
+	if tokuten_ocr_first != "False":
+		tokuten_ocr_first_true += 1
+		if time in data_25:
+			if tokuten_ocr_first == data_25[time]:
+				tokuten_ocr_first_true_match += 1
+			else:
+				tokuten_ocr_first_unmatch += 1
+		else:
+			tokuten_ocr_first_undetect += 1
+	else:
+		tokuten_ocr_first_false += 1
+		if time in data_25:
+			tokuten_ocr_first_misdetect += 1
+		else:
+			tokuten_ocr_first_false_match += 1
+
+	if tokuten_ocr_last != "False":
+		tokuten_ocr_last_true += 1
+		if time in data_26:
+			if tokuten_ocr_last == data_26[time]:
+				tokuten_ocr_last_true_match += 1
+			else:
+				tokuten_ocr_last_unmatch += 1
+		else:
+			tokuten_ocr_last_undetect += 1
+	else:
+		tokuten_ocr_last_false += 1
+		if time in data_26:
+			tokuten_ocr_last_misdetect += 1
+		else:
+			tokuten_ocr_last_false_match += 1
+
 # 計算結果の表示
 print("r0 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
 	r0_true,
@@ -541,3 +988,111 @@ print("homerun 正解数：{} 正答率：{} 再現率：{} 適合率：{}".form
 	homerun_tp/((homerun_tp+homerun_fp) or 1)
 	))
 print(homerun_fp_list)
+
+print("b0 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	b0_true,
+	(b0_tp+b0_tn)/(b0_tp+b0_fn+b0_fp+b0_tn),
+	b0_tp/((b0_tp+b0_fn) or 1),
+	b0_tp/((b0_tp+b0_fp) or 1)
+	))
+print(b0_fp_list)
+
+print("b1 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	b1_true,
+	(b1_tp+b1_tn)/(b1_tp+b1_fn+b1_fp+b1_tn),
+	b1_tp/((b1_tp+b1_fn) or 1),
+	b1_tp/((b1_tp+b1_fp) or 1)
+	))
+print(b1_fp_list)
+
+print("b2 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	b2_true,
+	(b2_tp+b2_tn)/(b2_tp+b2_fn+b2_fp+b2_tn),
+	b2_tp/((b2_tp+b2_fn) or 1),
+	b2_tp/((b2_tp+b2_fp) or 1)
+	))
+print(b2_fp_list)
+
+print("b3 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	b3_true,
+	(b3_tp+b3_tn)/(b3_tp+b3_fn+b3_fp+b3_tn),
+	b3_tp/((b3_tp+b3_fn) or 1),
+	b3_tp/((b3_tp+b3_fp) or 1)
+	))
+print(b3_fp_list)
+
+print("s0 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	s0_true,
+	(s0_tp+s0_tn)/(s0_tp+s0_fn+s0_fp+s0_tn),
+	s0_tp/((s0_tp+s0_fn) or 1),
+	s0_tp/((s0_tp+s0_fp) or 1)
+	))
+print(s0_fp_list)
+
+print("s1 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	s1_true,
+	(s1_tp+s1_tn)/(s1_tp+s1_fn+s1_fp+s1_tn),
+	s1_tp/((s1_tp+s1_fn) or 1),
+	s1_tp/((s1_tp+s1_fp) or 1)
+	))
+print(s1_fp_list)
+
+print("s2 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	s2_true,
+	(s2_tp+s2_tn)/(s2_tp+s2_fn+s2_fp+s2_tn),
+	s2_tp/((s2_tp+s2_fn) or 1),
+	s2_tp/((s2_tp+s2_fp) or 1)
+	))
+print(s2_fp_list)
+
+#print("gameset 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+#	gameset_true,
+#	(gameset_tp+gameset_tn)/(gameset_tp+gameset_fn+gameset_fp+gameset_tn),
+#	gameset_tp/((gameset_tp+gameset_fn) or 1),
+#	gameset_tp/((gameset_tp+gameset_fp) or 1)
+#	))
+#print(gameset_fp_list)
+
+print("tokuten_in_homerun_and_gameset 正解数：{} 正答率：{} 再現率：{} 適合率：{}".format(
+	tokuten_in_homerun_and_gameset_true,
+	(tokuten_in_homerun_and_gameset_tp+tokuten_in_homerun_and_gameset_tn)/(tokuten_in_homerun_and_gameset_tp+tokuten_in_homerun_and_gameset_fn+tokuten_in_homerun_and_gameset_fp+tokuten_in_homerun_and_gameset_tn),
+	tokuten_in_homerun_and_gameset_tp/((tokuten_in_homerun_and_gameset_tp+tokuten_in_homerun_and_gameset_fn) or 1),
+	tokuten_in_homerun_and_gameset_tp/((tokuten_in_homerun_and_gameset_tp+tokuten_in_homerun_and_gameset_fp) or 1)
+	))
+print(tokuten_in_homerun_and_gameset_fp_list)
+
+print("score_ocr_first 正解数：{} 正答率：{} 認識精度：{} 誤認識率：{} 未検出率：{} 誤検出率：{}".format(
+	score_ocr_first_true,
+	(score_ocr_first_true_match+score_ocr_first_false_match)/(score_ocr_first_true+score_ocr_first_false),
+	score_ocr_first_true_match/(score_ocr_first_true or 1),
+	score_ocr_first_unmatch/(score_ocr_first_true or 1),
+	score_ocr_first_undetect/(score_ocr_first_true or 1),
+	score_ocr_first_misdetect/(score_ocr_first_false or 1)
+	))
+
+print("score_ocr_last 正解数：{} 正答率：{} 認識精度：{} 誤認識率：{} 未検出率：{} 誤検出率：{}".format(
+	score_ocr_last_true,
+	(score_ocr_last_true_match+score_ocr_last_false_match)/(score_ocr_last_true+score_ocr_last_false),
+	score_ocr_last_true_match/(score_ocr_last_true or 1),
+	score_ocr_last_unmatch/(score_ocr_last_true or 1),
+	score_ocr_last_undetect/(score_ocr_last_true or 1),
+	score_ocr_last_misdetect/(score_ocr_last_false or 1)
+	))
+
+print("tokuten_ocr_first 正解数：{} 正答率：{} 認識精度：{} 誤認識率：{} 未検出率：{} 誤検出率：{}".format(
+	tokuten_ocr_first_true,
+	(tokuten_ocr_first_true_match+tokuten_ocr_first_false_match)/(tokuten_ocr_first_true+tokuten_ocr_first_false),
+	tokuten_ocr_first_true_match/(tokuten_ocr_first_true or 1),
+	tokuten_ocr_first_unmatch/(tokuten_ocr_first_true or 1),
+	tokuten_ocr_first_undetect/(tokuten_ocr_first_true or 1),
+	tokuten_ocr_first_misdetect/(tokuten_ocr_first_false or 1)
+	))
+
+print("tokuten_ocr_last 正解数：{} 正答率：{} 認識精度：{} 誤認識率：{} 未検出率：{} 誤検出率：{}".format(
+	tokuten_ocr_last_true,
+	(tokuten_ocr_last_true_match+tokuten_ocr_last_false_match)/(tokuten_ocr_last_true+tokuten_ocr_last_false),
+	tokuten_ocr_last_true_match/(tokuten_ocr_last_true or 1),
+	tokuten_ocr_last_unmatch/(tokuten_ocr_last_true or 1),
+	tokuten_ocr_last_undetect/(tokuten_ocr_last_true or 1),
+	tokuten_ocr_last_misdetect/(tokuten_ocr_last_false or 1)
+	))
