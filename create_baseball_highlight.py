@@ -9,8 +9,21 @@ import pyocr
 import re
 from multiprocessing import Process
 import logging
-import os.path
+from google.cloud import vision
+import os
+from azure.ai.vision.imageanalysis import ImageAnalysisClient
+from azure.ai.vision.imageanalysis.models import VisualFeatures
+from azure.core.credentials import AzureKeyCredential
 
+try:
+	endpoint = os.environ["VISION_ENDPOINT"]
+	key = os.environ["VISION_KEY"]
+except KeyError:
+	print("Missing environment variable 'VISION_ENDPOINT' or 'VISION_KEY'")
+	print("Set them before running this sample.")
+	exit()
+
+# 閾値調整
 runnerpoint = () 	# テンプレートマッチング（ランナー）の座標
 runner_threshold = 0.8	# テンプレートマッチング（ランナー）の閾値
 outpoint = () 		# テンプレートマッチング（アウト）の座標
@@ -30,6 +43,11 @@ gameset_threshold = 0.5 # テンプレートマッチング（ゲームセット
 homerun_and_gameset_point = () # テンプレートマッチング（ホームラン＆ゲームセット）の座標
 homerun_and_gameset_threshold = 0.8 # テンプレートマッチング（ホームラン＆ゲームセット）の閾値
 
+# OCRツール選択
+ocr_tools = ["tesseract", "cloud vision api", "azure ai vision"]
+ocr_tool = ocr_tools[0]
+
+# ログ出力設定
 logger = logging.getLogger(__name__)
 #logger.setLevel(logging.DEBUG)
 logger.setLevel(logging.INFO)
@@ -203,6 +221,120 @@ def ocr(movie, ocrpoint, msg):
 	f = open("processtime.log", "a")
 	f.write("{}, {}\n".format(msg, datetime.timedelta(seconds=end-start)))
 	f.close()
+
+
+# OCR（数字）: Gloud Vision API
+def ocr_google(movie, ocrpoint, msg):
+	# APIj準備
+	client = vision.ImageAnnotatorClient()
+
+	cap = cv2.VideoCapture(movie)
+	if not cap.isOpened():
+		sys.exit()
+	fps = cap.get(cv2.CAP_PROP_FPS)
+
+	tools = pyocr.get_available_tools()
+	tool = tools[0]
+
+	ix = ocrpoint[0]
+	iy = ocrpoint[1]
+	x = ocrpoint[2]
+	y = ocrpoint[3]
+
+	# 処理時間計測
+	start = time.time()
+
+	f = open(msg, mode='a')
+	c = 0
+	while True:
+		ret, frame = cap.read()
+		if ret:
+			if int(c%fps) == 0:
+				img = cv2.resize(frame[iy:y, ix:x], dsize=None, fx=1.0, fy=1.0)
+				img_byte = cv2.imencode(".png", img)[1].tobytes()
+				img_target = vision.Image(content=img_byte)
+				response = client.text_detection(image=img_target)
+				txt = response.full_text_annotation.text
+
+				m = re.search("\d+", txt)
+				if m:
+					logger.info("{}, {}, {}".format(c//fps, msg, m.group()))
+					f.write("{}, {}".format(c//fps, m.group()))
+					f.write("\n")
+		else:
+			break
+		c += 1
+	f.close()
+	cap.release()
+
+	# 処理時間計測
+	end = time.time()
+
+	# 処理時間記載
+	# close時に追記されるのでファイルロックは不要
+	f = open("processtime.log", "a")
+	f.write("{}, {}\n".format(msg, datetime.timedelta(seconds=end-start)))
+	f.close()
+
+
+# OCR（数字）: Azure AI Vision
+def ocr_azure(movie, ocrpoint, msg):
+	# APIj準備
+	client = ImageAnalysisClient(
+		endpoint=endpoint,
+		credential=AzureKeyCredential(key)
+	)
+
+	cap = cv2.VideoCapture(movie)
+	if not cap.isOpened():
+		sys.exit()
+	fps = cap.get(cv2.CAP_PROP_FPS)
+
+	tools = pyocr.get_available_tools()
+	tool = tools[0]
+
+	ix = ocrpoint[0]
+	iy = ocrpoint[1]
+	x = ocrpoint[2]
+	y = ocrpoint[3]
+
+	# 処理時間計測
+	start = time.time()
+
+	f = open(msg, mode='a')
+	c = 0
+	while True:
+		ret, frame = cap.read()
+		if ret:
+			if int(c%fps) == 0:
+				img = frame[iy:y, ix:x]
+				h, w = img.shape[:2]
+				img = cv2.resize(img, dsize=None, fx=50/w, fy=50/h)
+				img_byte = cv2.imencode(".png", img)[1].tobytes()
+				result = client.analyze(image_data=img_byte, visual_features=[VisualFeatures.READ])
+				if result.read is not None:
+					if result.read.blocks != []:
+						txt_lines = [line.text for line in result.read.blocks[0].lines]
+						txt = "\n".join(txt_lines)
+
+						m = re.search("\d+", txt)
+						if m:
+							logger.info("{}, {}, {}".format(c//fps, msg, m.group()))
+							f.write("{}, {}".format(c//fps, m.group()))
+							f.write("\n")
+		else:
+			break
+		c += 1
+	f.close()
+	cap.release()
+
+	# 処理時間計測
+	end = time.time()
+
+	# 処理時間記載
+	# close時に追記されるのでファイルロックは不要
+	f = open("processtime.log", "a")
+	f.write("{}, {}\n".format(msg, datetime.timedelta(seconds=end-start)))
 
 
 # 得点シーンの特定（カラーヒストグラム比較）
@@ -696,37 +828,107 @@ if __name__=="__main__":
 	process21.start()
 	process_list.append(process21)
 
-	# OCRの実行（スコア：先攻）
-	process22 = Process(target=ocr, 
-		kwargs={"movie":"output.mp4",
-			"ocrpoint":ocrpoint_firstscore,
-			"msg":"スコア：先攻"})
-	process22.start()
-	process_list.append(process22)
+	# Tesseractを用いたOCR
+	if ocr_tool == "tesseract":
+		# OCRの実行（スコア：先攻）
+		process22 = Process(target=ocr, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_firstscore,
+				"msg":"スコア：先攻"})
+		process22.start()
+		process_list.append(process22)
 
-	# OCRの実行（スコア：後攻）
-	process23 = Process(target=ocr, 
-		kwargs={"movie":"output.mp4",
-			"ocrpoint":ocrpoint_lastscore,
-			"msg":"スコア：後攻"})
-	process23.start()
-	process_list.append(process23)
+		# OCRの実行（スコア：後攻）
+		process23 = Process(target=ocr, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_lastscore,
+				"msg":"スコア：後攻"})
+		process23.start()
+		process_list.append(process23)
+	
+		# OCRの実行（得点シーン：先攻）
+		process24 = Process(target=ocr, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_firsttokuten,
+				"msg":"得点シーン：先攻"})
+		process24.start()
+		process_list.append(process24)
+	
+		# OCRの実行（得点シーン：後攻）
+		process25 = Process(target=ocr, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_lasttokuten,
+				"msg":"得点シーン：後攻"})
+		process25.start()
+		process_list.append(process25)
 
-	# OCRの実行（得点シーン：先攻）
-	process24 = Process(target=ocr, 
-		kwargs={"movie":"output.mp4",
-			"ocrpoint":ocrpoint_firsttokuten,
-			"msg":"得点シーン：先攻"})
-	process24.start()
-	process_list.append(process24)
+	# Cloud Vision APIを用いたOCR
+	if ocr_tool == "cloud vision api":
+		# OCRの実行（スコア：先攻）
+		process22 = Process(target=ocr_google, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_firstscore,
+				"msg":"スコア：先攻"})
+		process22.start()
+		process_list.append(process22)
+	
+		# OCRの実行（スコア：後攻）
+		process23 = Process(target=ocr_google, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_lastscore,
+				"msg":"スコア：後攻"})
+		process23.start()
+		process_list.append(process23)
+	
+		# OCRの実行（得点シーン：先攻）
+		process24 = Process(target=ocr_google, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_firsttokuten,
+				"msg":"得点シーン：先攻"})
+		process24.start()
+		process_list.append(process24)
+	
+		# OCRの実行（得点シーン：後攻）
+		process25 = Process(target=ocr_google, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_lasttokuten,
+				"msg":"得点シーン：後攻"})
+		process25.start()
+		process_list.append(process25)
 
-	# OCRの実行（得点シーン：後攻）
-	process25 = Process(target=ocr, 
-		kwargs={"movie":"output.mp4",
-			"ocrpoint":ocrpoint_lasttokuten,
-			"msg":"得点シーン：後攻"})
-	process25.start()
-	process_list.append(process25)
+	# Azure AI Visionを用いたOCR
+	if ocr_tool == "azure ai vision":
+		# OCRの実行（スコア：先攻）
+		process22 = Process(target=ocr_azure, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_firstscore,
+				"msg":"スコア：先攻"})
+		process22.start()
+		process_list.append(process22)
+	
+		# OCRの実行（スコア：後攻）
+		process23 = Process(target=ocr_azure, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_lastscore,
+				"msg":"スコア：後攻"})
+		process23.start()
+		process_list.append(process23)
+	
+		# OCRの実行（得点シーン：先攻）
+		process24 = Process(target=ocr_azure, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_firsttokuten,
+				"msg":"得点シーン：先攻"})
+		process24.start()
+		process_list.append(process24)
+	
+		# OCRの実行（得点シーン：後攻）
+		process25 = Process(target=ocr_azure, 
+			kwargs={"movie":"output.mp4",
+				"ocrpoint":ocrpoint_lasttokuten,
+				"msg":"得点シーン：後攻"})
+		process25.start()
+		process_list.append(process25)
 
 	# カラーヒストグラム比較の実行
 	#process00 = Process(target=compare_color_tokuten_scene, 
