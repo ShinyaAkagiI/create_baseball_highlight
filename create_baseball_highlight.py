@@ -15,14 +15,6 @@ from azure.ai.vision.imageanalysis import ImageAnalysisClient
 from azure.ai.vision.imageanalysis.models import VisualFeatures
 from azure.core.credentials import AzureKeyCredential
 
-try:
-	endpoint = os.environ["VISION_ENDPOINT"]
-	key = os.environ["VISION_KEY"]
-except KeyError:
-	print("Missing environment variable 'VISION_ENDPOINT' or 'VISION_KEY'")
-	print("Set them before running this sample.")
-	exit()
-
 # 閾値調整
 runnerpoint = () 	# テンプレートマッチング（ランナー）の座標
 runner_threshold = 0.8	# テンプレートマッチング（ランナー）の閾値
@@ -197,7 +189,12 @@ def ocr(movie, ocrpoint, msg):
 		ret, frame = cap.read()
 		if ret:
 			if int(c%fps) == 0:
-				img = cv2.resize(frame[iy:y, ix:x], dsize=None, fx=1.0, fy=1.0)
+				# 比較検証用
+				img = frame[iy:y, ix:x]
+				h, w = img.shape[:2]
+				img = cv2.resize(img, dsize=None, fx=50/w, fy=50/h)
+				# 実処理用
+				#img = cv2.resize(frame[iy:y, ix:x], dsize=None, fx=1.0, fy=1.0)
 				txt = tool.image_to_string(
 					Image.fromarray(img),
 					lang="eng",
@@ -225,7 +222,11 @@ def ocr(movie, ocrpoint, msg):
 
 # OCR（数字）: Gloud Vision API
 def ocr_google(movie, ocrpoint, msg):
-	# APIj準備
+	# API準備
+	if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ.keys():
+		print("Missing environment variable 'GOOGLE_APPLICATION_CREDENTIALS'")
+		exit()
+
 	client = vision.ImageAnnotatorClient()
 
 	cap = cv2.VideoCapture(movie)
@@ -250,7 +251,12 @@ def ocr_google(movie, ocrpoint, msg):
 		ret, frame = cap.read()
 		if ret:
 			if int(c%fps) == 0:
-				img = cv2.resize(frame[iy:y, ix:x], dsize=None, fx=1.0, fy=1.0)
+				# 比較検証用
+				img = frame[iy:y, ix:x]
+				h, w = img.shape[:2]
+				img = cv2.resize(img, dsize=None, fx=50/w, fy=50/h)
+				# 実処理用
+				#img = cv2.resize(frame[iy:y, ix:x], dsize=None, fx=1.0, fy=1.0)
 				img_byte = cv2.imencode(".png", img)[1].tobytes()
 				img_target = vision.Image(content=img_byte)
 				response = client.text_detection(image=img_target)
@@ -279,7 +285,15 @@ def ocr_google(movie, ocrpoint, msg):
 
 # OCR（数字）: Azure AI Vision
 def ocr_azure(movie, ocrpoint, msg):
-	# APIj準備
+	# API準備
+	try:
+		endpoint = os.environ["VISION_ENDPOINT"]
+		key = os.environ["VISION_KEY"]
+	except KeyError:
+		print("Missing environment variable 'VISION_ENDPOINT' or 'VISION_KEY'")
+		print("Set them before running this sample.")
+		exit()
+
 	client = ImageAnalysisClient(
 		endpoint=endpoint,
 		credential=AzureKeyCredential(key)
@@ -478,24 +492,6 @@ if __name__=="__main__":
 	#homerunpoint = (ix, iy, vx, vy)
 	homerunpoint = (172, 176, 880, 542)
 	#print(homerunpoint)
-
-	# OCRの座標取得
-	#ocr_time = input("time where ocr object exists (00:00:00) : ")
-	#create_true_image(movie_fname, ocr_time, "ocr_true_image.png")
-
-	#img = cv2.imread("ocr_true_image.png")
-	#cache = None
-	#cv2.namedWindow('image')
-	#cv2.setMouseCallback('image',select_rectangle)
-	#while(1):
-	#	cv2.imshow('image',img)
-	#	k = cv2.waitKey(1) & 0xFF
-	#	if k == 13: # enter key
-	#		break
-	#cv2.destroyAllWindows()
-	#cv2.waitKey(1)
-	#ocrpoint = (ix, iy, vx, vy)
-	#print(ocrpoint)
 
 	# カラーヒストグラム比較・テンプレートマッチング（得点シーン）の座標取得
 	#print("example # 13:24")
