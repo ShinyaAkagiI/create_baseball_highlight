@@ -10,6 +10,7 @@ https://drive.google.com/file/d/1sJ0ygXSMOhBk9mCsJXWAqBgZ7Zq-A-jJ/view?usp=shari
 output.mp4 ･･･ 解析動画ファイル  
 result.txt ･･･ 解析動画の正解データセット  
 create_baseball_highlight.py ･･･ テンプレートマッチング、OCR実行用プログラム  
+digit_recognition.py ･･･ CNNベースの数字文字認識実行用プログラム
 get_image_point_in_movie.py ･･･ 動画の特定時間における画面確認用プログラム  
 analysis.py ･･･ 精度評価用プログラム  
 r0.png ･･･ ランナー：なしのテンプレート画像  
@@ -37,6 +38,7 @@ tokuten2.png ･･･ ホームラン＆ゲームセット抽出用のテンプ
 (1) create_baseball_highlight.pyを実行することで、テンプレートマッチング、OCRが実行されます。  
 　※閾値を変更したい場合は、グローバル変数として定義しているので、適宜修正して実行してください。  
 　※OCRツールはデフォルトだとTesseractを使用する設定になっていますが、Cloud Vision API、Azure AI Visionにも対応可能であり、ocr_tool変数を変更するだけで良いです。  
+　※OCRツールを利用しない場合は、ocr_tool変数をNoneなどにしておき、OCRモデルを用意した上でdigit_recognition.pyを実行してください。OCRモデルはKaggleのDigit Recognizerコンペティションから取得しました。  
 (2) 処理が完了するとランナー、アウト、ボール、ストライク、得点シーン、ホームラン＆ゲームセットに関する分類結果がテキスト形式で出力されます。  
 　※分析結果のテキストは1回実行ごとに名前を変えるなどしなければデータが追記されてしまいます。  
 (3) analysis.pyを実行することで、精度評価結果が表示されます。  
@@ -44,6 +46,8 @@ tokuten2.png ･･･ ホームラン＆ゲームセット抽出用のテンプ
 ```
 #python3 create_baseball_highlight.py
 output.mp4
+
+#python3 digit_recognition.py
 
 #python3 analysis.py
 ```
@@ -56,8 +60,11 @@ output.mp4
   - 情報処理学会全国大会講演論文集, 86巻, 2号, pp.59-60, 2024-03-01
   - https://jglobal.jst.go.jp/detail?JGLOBAL_ID=202402222974179705
 - 赤木信也: 野球ゲームにおける盛り上がり箇所の自動検出ー光学文字認識の一考察ー
-  - FIT2024（発表予定）
-  - https://www.ipsj.or.jp/event/fit/fit2024/index.html
+  - FIT2024
+  - https://www.ipsj.or.jp/event/fit/fit2024/abstract/index.html
+- 赤木信也: 野球ゲームにおける数字2文字の光学文字認識（発表予定）
+ - 情報処理学会全国大会
+ - https://www.ipsj.or.jp/event/taikai/87/
   
 # ライセンス
 ソースコードなどは公開はしていますが著作権を放棄していません。  
