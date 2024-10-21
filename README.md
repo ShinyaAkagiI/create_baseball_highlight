@@ -63,8 +63,8 @@ output.mp4
   - FIT2024
   - https://www.ipsj.or.jp/event/fit/fit2024/abstract/index.html
 - 赤木信也: 野球ゲームにおける数字2文字の光学文字認識（発表予定）
- - 情報処理学会全国大会
- - https://www.ipsj.or.jp/event/taikai/87/
+  - 情報処理学会全国大会
+  - https://www.ipsj.or.jp/event/taikai/87/
   
 # ライセンス
 ソースコードなどは公開はしていますが著作権を放棄していません。  
