@@ -11,6 +11,7 @@ output.mp4 ･･･ 解析動画ファイル
 result.txt ･･･ 解析動画の正解データセット  
 create_baseball_highlight.py ･･･ テンプレートマッチング、OCR実行用プログラム  
 digit_recognition.py ･･･ CNNベースの数字文字認識実行用プログラム
+create_highlight.py ･･･ ハイライト生成用プログラム
 get_image_point_in_movie.py ･･･ 動画の特定時間における画面確認用プログラム  
 analysis.py ･･･ 精度評価用プログラム  
 r0.png ･･･ ランナー：なしのテンプレート画像  
@@ -42,6 +43,7 @@ tokuten2.png ･･･ ホームラン＆ゲームセット抽出用のテンプ
 (2) 処理が完了するとランナー、アウト、ボール、ストライク、得点シーン、ホームラン＆ゲームセットに関する分類結果がテキスト形式で出力されます。  
 　※分析結果のテキストは1回実行ごとに名前を変えるなどしなければデータが追記されてしまいます。  
 (3) analysis.pyを実行することで、精度評価結果が表示されます。  
+(4) create_highlight.pyを実行することで、テキスト形式のデータ（動画タギングデータ）を使用して、ハイライト動画が生成されます。  
   
 ```
 #python3 create_baseball_highlight.py
@@ -50,6 +52,8 @@ output.mp4
 #python3 digit_recognition.py
 
 #python3 analysis.py
+
+#python3 create_highlight.py
 ```
   
 # 論文
@@ -60,11 +64,14 @@ output.mp4
   - 情報処理学会全国大会講演論文集, 86巻, 2号, pp.59-60, 2024-03-01
   - https://jglobal.jst.go.jp/detail?JGLOBAL_ID=202402222974179705
 - 赤木信也: 野球ゲームにおける盛り上がり箇所の自動検出ー光学文字認識の一考察ー
-  - FIT2024
-  - https://www.ipsj.or.jp/event/fit/fit2024/abstract/index.html
-- 赤木信也: 野球ゲームにおける数字2文字の光学文字認識（発表予定）
+  - 情報科学技術フォーラム講演論文集 (FIT), 23巻, 2号, pp.513-514, 2024-08-21
+  - https://jglobal.jst.go.jp/detail?JGLOBAL_ID=202402274492046394
+- 赤木信也: 野球ゲームにおける数字2文字の光学文字認識
   - 情報処理学会全国大会
   - https://www.ipsj.or.jp/event/taikai/87/
+- 赤木信也：野球ゲームにおける動画タギングを用いたハイライト生成（発表予定）
+  - FIT2025
+  - https://www.ipsj.or.jp/event/fit/fit2025/
   
 # ライセンス
 ソースコードなどは公開はしていますが著作権を放棄していません。  
