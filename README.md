@@ -5,6 +5,10 @@
 # 解析動画
 YouTubeに公開されている「にじさんじ甲子園2022決勝」の１試合目を抽出しており、下記リンクのGoogleドライブからダウンロードできます。  
 https://drive.google.com/file/d/1sJ0ygXSMOhBk9mCsJXWAqBgZ7Zq-A-jJ/view?usp=sharing  
+
+# ハイライト動画
+解析動画を元に作成したハイライト動画は、下記リンクのGoogleドライブからダウンロードできます。  
+https://drive.google.com/file/d/1xgm0L2CbTRufv-xI-PhJ5EgMwbWEF7gi/view?usp=drive_link  
   
 # ファイル構成
 output.mp4 ･･･ 解析動画ファイル  
