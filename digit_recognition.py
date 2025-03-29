@@ -8,7 +8,7 @@ from multiprocessing import Process
 
 movie = "output.mp4"
 
-model = load_model("model1.h5")
+model = load_model("model.h5")
 
 def score_digit_recognition(movie, tmppoint, msg):
 	# 処理時間計測
@@ -207,7 +207,7 @@ def tokuten_digit_recognition(movie, tmppoint, msg):
 
 
 if __name__ == "__main__":
-	start = time.time()
+	multi_start = time.time()
 
 	# OCRの座標取得（スコア：先攻）
 	#print("example # 47:24")
@@ -322,6 +322,16 @@ if __name__ == "__main__":
 	for p in process_list:
 		p.join()
 
-	end = time.time()
+	multi_end = time.time()
 
-	print("処理時間：", end-start)
+	single_start = time.time()
+
+	score_digit_recognition("output.mp4", ocrpoint_firstscore, "スコア：先攻")
+	score_digit_recognition("output.mp4", ocrpoint_lastscore, "スコア：後攻")
+	tokuten_digit_recognition("output.mp4", ocrpoint_firsttokuten, "得点シーン：先攻")
+	tokuten_digit_recognition("output.mp4", ocrpoint_lasttokuten, "得点シーン：後攻")
+
+	single_end = time.time()
+
+	print("マルチプロセスの処理時間：", multi_end-multi_start)
+	print("シングルプロセスの処理時間：", single_end-single_start)

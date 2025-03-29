@@ -322,6 +322,12 @@ def ocr_azure(movie, ocrpoint, msg):
 		if ret:
 			if int(c%fps) == 0:
 				img = frame[iy:y, ix:x]
+
+				# 二値化しても精度は改善せず
+				#img = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
+				#img = 255-img
+				#ret, img = cv2.threshold(img, 60, 255, cv2.THRESH_BINARY)
+				# 200x200にしても精度は改善せず、処理速度も変化なし
 				h, w = img.shape[:2]
 				img = cv2.resize(img, dsize=None, fx=50/w, fy=50/h)
 				img_byte = cv2.imencode(".png", img)[1].tobytes()
